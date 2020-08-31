@@ -1,0 +1,38 @@
+﻿#pragma kernel CSMain
+
+RWTexture2D<float4> displacement;
+RWTexture2D<float4> normal;
+
+RWTexture2D<float4> final_dy;
+RWTexture2D<float4> final_dx;
+RWTexture2D<float4> final_dz;
+
+int domainSize;
+float choppiness;
+
+float3 GetNormal(float3 a, float3 b, float3 c)
+{
+    float3 A = normalize(b - a);
+    float3 B = normalize(c - a);
+
+    return cross(A,B);
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float2 x = id.xy;
+    
+    displacement[x] = float4(final_dx[id.xy].r * choppiness, final_dy[id.xy].r, final_dz[id.xy].r * choppiness, 1);
+    
+    uint2 id_a = uint2((id.x + 0) % domainSize, (id.y + 0) % domainSize);
+    uint2 id_b = uint2((id.x + 0) % domainSize, (id.y + 1) % domainSize);
+    uint2 id_c = uint2((id.x + 1) % domainSize, (id.y + 0) % domainSize);
+
+    // create points a, b and c
+    float3 a = float3(final_dx[id_a].r * choppiness, final_dy[id_a].r, final_dz[id_a].r + choppiness) + float3(.0, .0, .0);
+    float3 b = float3(final_dx[id_b].r * choppiness, final_dy[id_b].r, final_dz[id_b].r + choppiness) + float3(.0, .0, .5);
+    float3 c = float3(final_dx[id_c].r * choppiness, final_dy[id_c].r, final_dz[id_c].r + choppiness) + float3(.5, .0, .0);
+
+    normal[x] = float4(normalize(GetNormal(a,b,c)), 1);
+}

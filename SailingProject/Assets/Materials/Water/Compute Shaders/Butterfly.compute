@@ -1,0 +1,103 @@
+﻿#pragma kernel butterfly CHANNEL=x TX=256 TY=1 FINAL=0
+#pragma kernel butterfly CHANNEL=y TX=1 TY=256 FINAL=1
+
+Texture2D<float2> input;
+Texture2D<float2> inputButterfly;
+
+#if !FINAL
+RWTexture2D<float2> output;
+#else
+RWTexture2D<float> output;
+#endif
+
+groupshared float2 pingpongcurrent[256];
+groupshared float2 pingpongtarget[256];
+
+void ButterflyPass(float2 butterfly, uint k, uint i)
+{
+    // Get index
+    uint indexA;
+    uint indexB;
+
+    uint offset = 1 << i;
+
+    if ((k / offset) % 2 == 1)
+    {
+        indexA = k - offset;
+        indexB = k;
+    }
+    else
+    {
+        indexA = k;
+        indexB = k + offset;
+    }
+
+    if (i == 0)
+    {
+        indexA = reversebits(indexA) >> 24;
+        indexB = reversebits(indexB) >> 24;
+    }
+
+    // Butterfly Operation
+    float2 valueA;
+    float2 valueB;
+
+    if (i % 2 == 0)
+    {
+        valueA = pingpongcurrent[indexA];
+        valueB = pingpongcurrent[indexB];
+    }
+    else
+    {
+        valueA = pingpongtarget[indexA];
+        valueB = pingpongtarget[indexB];
+    }
+
+    float2 weightA = butterfly.xy;
+    float2 weightB = weightA * valueB.r + weightA.gr * valueB.g * float2(-1, 1);
+    float2 result = valueA + weightB;
+
+    if (i % 2 == 0)
+    {
+        pingpongtarget[k] = result;
+    }
+    else
+    {
+        pingpongcurrent[k] = result;
+    }
+}
+
+float2 cconj(float2 v)
+{
+    return float2(v.x, -v.y);
+}
+
+[numthreads(TX, TY, 1)]
+void butterfly(uint2 id : SV_DispatchThreadID)
+{
+    uint k = id.CHANNEL;
+
+    // Conjugate the twiddle factors if on final pass
+#if !FINAL
+    pingpongcurrent[k] = cconj(input[id]);
+#else
+	pingpongcurrent[k] = input[id];
+#endif
+
+	[unroll(8)]
+    for (int i = 0; i < 8; ++i)
+    {
+        GroupMemoryBarrierWithGroupSync();
+        ButterflyPass(inputButterfly[uint2(k, i)], k, i);
+    }
+
+    GroupMemoryBarrierWithGroupSync();
+
+    float2 result = pingpongcurrent[k];
+#if !FINAL
+    output[id] = result;
+#else
+	float sign = ((id.x + id.y) % 2) == 1 ? -1.0f : 1.0f;
+	output[id] = sign * result.x;
+#endif
+}

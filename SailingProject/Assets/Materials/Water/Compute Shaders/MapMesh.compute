@@ -1,0 +1,19 @@
+﻿#pragma kernel Build
+
+float4 displacementMagnitude;
+
+RWStructuredBuffer<float3> initialVertexBuffer;
+RWStructuredBuffer<float3> vertexBuffer;
+RWTexture2D<float4> displacement;
+
+[numthreads(8,8,1)]
+void Build(uint3 id : SV_DispatchThreadID)
+{
+	if (id.x > 100 || id.y > 100) return;
+
+	vertexBuffer[id.x + id.y * 101] = initialVertexBuffer[id.x + id.y * 101] + float3(
+		displacement[id.xy].x * displacementMagnitude.x,
+		displacement[id.xy].y * displacementMagnitude.y,
+		displacement[id.xy].z * displacementMagnitude.z
+		);
+}
