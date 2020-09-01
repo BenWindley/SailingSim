@@ -345,7 +345,9 @@ public class TextureGenerator : MonoBehaviour
 
         vertexBuffer.GetData(vertexArray);
         mesh.vertices = vertexArray;
+
         mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
         mesh.MarkModified();
         mesh.RecalculateBounds();
     }

@@ -272,13 +272,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 290962133}
-  m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
+  m_LocalRotation: {x: 0.39044833, y: -0.34682897, z: 0.161729, w: 0.8373192}
   m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 1
-  m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 50, y: -45, z: 0}
 --- !u!1001 &1444495559
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -572,7 +572,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1762711268}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.02780526, y: 0.229, z: 0.059118357}
+  m_LocalPosition: {x: 0, y: -0.25, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 211536032}
@@ -602,9 +602,9 @@ MonoBehaviour:
   build: {fileID: 7200000, guid: 8d93c83f7255c6f4f983e8053efa7fbe, type: 3}
   displacement_map: {fileID: 0}
   normal_map: {fileID: 0}
-  displacementMag: {x: 0.1, y: 0.1, z: 0.1}
+  displacementMag: {x: 0.1, y: 0.15, z: 0.1}
   waterMat: {fileID: 2100000, guid: eb9f61353bf900e44a5e52f8ca3f5728, type: 2}
   gridResolution: 100
   domainSize: 256
-  choppiness: 0.1
+  choppiness: 0.2
   mesh: {fileID: 0}
