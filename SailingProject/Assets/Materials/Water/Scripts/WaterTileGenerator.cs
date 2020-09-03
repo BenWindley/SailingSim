@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TextureGenerator : MonoBehaviour
+public class WaterTileGenerator : MonoBehaviour
 {
+    #region WaterDisplacement
     public ComputeShader encino_spectrum;
     private int kernel_spectrum_init;
     private int kernel_spectrum_update;
@@ -42,8 +43,16 @@ public class TextureGenerator : MonoBehaviour
     public int gridResolution = 100;
     public int domainSize = 256;
     public float choppiness = 0.5f;
+    #endregion
 
     public Mesh mesh;
+
+    public int tileBuffer = 0;
+
+    private List<GameObject> bufferTiles = new List<GameObject>();
+    private List<MeshCollider> meshColliders = new List<MeshCollider>();
+
+    public GameObject blankWaterTile;
 
     private void RunShader()
     {
@@ -204,7 +213,7 @@ public class TextureGenerator : MonoBehaviour
             {
                 for(int y = 0; y <= gridResolution; ++y, ++i)
                 {
-                    vert[i] = new Vector3(x / (float)gridResolution - 0.5f, 0, y / (float)gridResolution - 0.5f);
+                    vert[i] = new Vector3(2 * (x / (float)gridResolution - 0.5f), 0, 2 * (y / (float)gridResolution - 0.5f));
                     uvs[i] = new Vector2(x / (float)gridResolution, y / (float)gridResolution);
                 }
             }
@@ -236,8 +245,6 @@ public class TextureGenerator : MonoBehaviour
 
             vertexArray = new Vector3[vert.Length];
 
-            GetComponent<MeshFilter>().sharedMesh = mesh;
-
             vertexBuffer = new ComputeBuffer(vert.Length, sizeof(float) * 3);
             initialVertexBuffer = new ComputeBuffer(vert.Length, sizeof(float) * 3);
 
@@ -257,9 +264,9 @@ public class TextureGenerator : MonoBehaviour
         // Time Dependent Spectrum
         {
             encino_spectrum.SetInt("domainSize", domainSize);
-            encino_spectrum.SetFloat("gravity", 9.81f);
+            encino_spectrum.SetFloat("gravity", 0.5f * 9.81f);
             encino_spectrum.SetFloats("windDirection", 1, 1);
-            encino_spectrum.SetFloat("windSpeed", 5.0f);
+            encino_spectrum.SetFloat("windSpeed", 20.0f);
             encino_spectrum.SetFloat("time", Time.time);
 
             encino_spectrum.SetTexture(kernel_spectrum_update, "inputH0", H0);
@@ -327,9 +334,19 @@ public class TextureGenerator : MonoBehaviour
 
     private void Awake()
     {
-        mesh = GetComponent<MeshFilter>().sharedMesh;
+        mesh = new Mesh();
 
         RunShader();
+
+        for (int x = -tileBuffer; x <= tileBuffer; ++x)
+            for (int z = -tileBuffer; z <= tileBuffer; ++z)
+            {
+                GameObject t = Instantiate(blankWaterTile, transform);
+                t.transform.localPosition = new Vector3(2 * x, 0, 2 * z);
+                t.GetComponent<MeshFilter>().sharedMesh = mesh;
+                bufferTiles.Add(t);
+                meshColliders.Add(t.GetComponent<MeshCollider>());
+            }
     }
 
     private void Update()
@@ -340,8 +357,10 @@ public class TextureGenerator : MonoBehaviour
         waterMat.SetTexture("_NormalMap", normal_map);
 
         build.SetVector("displacementMagnitude", displacementMag);
+        build.SetInt("width", gridResolution);
+        build.SetInt("height", gridResolution);
 
-        build.Dispatch(kernel_build, Mathf.CeilToInt(100 / 8.0f), Mathf.CeilToInt(100 / 8.0f), 1);
+        build.Dispatch(kernel_build, Mathf.CeilToInt(gridResolution / 8.0f), Mathf.CeilToInt(gridResolution / 8.0f), 1);
 
         vertexBuffer.GetData(vertexArray);
         mesh.vertices = vertexArray;
@@ -350,5 +369,14 @@ public class TextureGenerator : MonoBehaviour
         mesh.RecalculateBounds();
         mesh.MarkModified();
         mesh.RecalculateBounds();
+
+        foreach(var m in meshColliders)
+            m.sharedMesh = mesh;
+    }
+
+    private void OnDestroy()
+    {
+        vertexBuffer.Dispose();
+        initialVertexBuffer.Dispose();
     }
 }
