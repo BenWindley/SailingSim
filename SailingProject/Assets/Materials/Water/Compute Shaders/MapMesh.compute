@@ -4,7 +4,11 @@ float4 displacementMagnitude;
 
 RWStructuredBuffer<float3> initialVertexBuffer;
 RWStructuredBuffer<float3> vertexBuffer;
+
 Texture2D<float4> displacement;
+SamplerState samplerdisplacement;
+
+float3 positionOffset;
 
 int width;
 int height;
@@ -12,10 +16,10 @@ int height;
 float3 SampleDisplacement(float2 coord)
 {
 	coord /= width;
-	coord *= 256.0f;
-	coord %= 256.0f;
 
-	return displacement[coord];
+	coord += float2(positionOffset.z, positionOffset.x);
+
+	return displacement.SampleLevel(samplerdisplacement, coord, 0);
 }
 
 [numthreads(8,8,1)]

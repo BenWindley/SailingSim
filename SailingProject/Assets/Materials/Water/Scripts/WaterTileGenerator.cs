@@ -47,12 +47,12 @@ public class WaterTileGenerator : MonoBehaviour
 
     public Mesh mesh;
 
-    public int tileBuffer = 0;
-
-    private List<GameObject> bufferTiles = new List<GameObject>();
-    private List<MeshCollider> meshColliders = new List<MeshCollider>();
+    private GameObject tile;
+    private MeshCollider meshCollider;
 
     public GameObject blankWaterTile;
+
+    private bool cRun = false;
 
     private void RunShader()
     {
@@ -253,8 +253,8 @@ public class WaterTileGenerator : MonoBehaviour
             vertexBuffer.SetData(initalVertexArray);
             initialVertexBuffer.SetData(initalVertexArray);
 
-            build.SetBuffer(kernel_build, "initialVertexBuffer", initialVertexBuffer);
             build.SetBuffer(kernel_build, "vertexBuffer", vertexBuffer);
+            build.SetBuffer(kernel_build, "initialVertexBuffer", initialVertexBuffer);
             build.SetTexture(kernel_build, "displacement", displacement_map);
         }
     }
@@ -338,15 +338,9 @@ public class WaterTileGenerator : MonoBehaviour
 
         RunShader();
 
-        for (int x = -tileBuffer; x <= tileBuffer; ++x)
-            for (int z = -tileBuffer; z <= tileBuffer; ++z)
-            {
-                GameObject t = Instantiate(blankWaterTile, transform);
-                t.transform.localPosition = new Vector3(2 * x, 0, 2 * z);
-                t.GetComponent<MeshFilter>().sharedMesh = mesh;
-                bufferTiles.Add(t);
-                meshColliders.Add(t.GetComponent<MeshCollider>());
-            }
+        tile = Instantiate(blankWaterTile, transform);
+        tile.GetComponent<MeshFilter>().sharedMesh = mesh;
+        meshCollider = tile.GetComponent<MeshCollider>();
     }
 
     private void Update()
@@ -359,6 +353,11 @@ public class WaterTileGenerator : MonoBehaviour
         build.SetVector("displacementMagnitude", displacementMag);
         build.SetInt("width", gridResolution);
         build.SetInt("height", gridResolution);
+        build.SetVector("positionOffset", 0.5f * new Vector3(
+            transform.position.x / transform.localScale.x,
+            transform.position.y / transform.localScale.y,
+            transform.position.z / transform.localScale.z
+            ));
 
         build.Dispatch(kernel_build, Mathf.CeilToInt(gridResolution / 8.0f), Mathf.CeilToInt(gridResolution / 8.0f), 1);
 
@@ -370,8 +369,8 @@ public class WaterTileGenerator : MonoBehaviour
         mesh.MarkModified();
         mesh.RecalculateBounds();
 
-        foreach(var m in meshColliders)
-            m.sharedMesh = mesh;
+        if(Time.frameCount % 15 == 0)
+            meshCollider.sharedMesh = mesh;
     }
 
     private void OnDestroy()
