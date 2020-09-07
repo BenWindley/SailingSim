@@ -267,7 +267,7 @@ public class WaterTileGenerator : MonoBehaviour
             encino_spectrum.SetFloat("gravity", 0.5f * 9.81f);
             encino_spectrum.SetFloats("windDirection", 1, 1);
             encino_spectrum.SetFloat("windSpeed", 20.0f);
-            encino_spectrum.SetFloat("time", Time.time);
+            encino_spectrum.SetFloat("time", Time.time * 1.1f);
 
             encino_spectrum.SetTexture(kernel_spectrum_update, "inputH0", H0);
             encino_spectrum.SetTexture(kernel_spectrum_update, "outputDy", H_dy);
@@ -343,21 +343,30 @@ public class WaterTileGenerator : MonoBehaviour
         meshCollider = tile.GetComponent<MeshCollider>();
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         UpdateShader();
-        
+
+        tile.transform.position = new Vector3(
+            Mathf.RoundToInt(transform.position.x),
+            0,
+            Mathf.RoundToInt(transform.position.z)
+        );
+
         waterMat.SetTexture("_DisplacementMap", displacement_map);
         waterMat.SetTexture("_NormalMap", normal_map);
 
         build.SetVector("displacementMagnitude", displacementMag);
         build.SetInt("width", gridResolution);
         build.SetInt("height", gridResolution);
+
         build.SetVector("positionOffset", 0.5f * new Vector3(
-            transform.position.x / transform.localScale.x,
-            transform.position.y / transform.localScale.y,
-            transform.position.z / transform.localScale.z
+            tile.transform.position.x / transform.localScale.x,
+            0,
+            tile.transform.position.z / transform.localScale.z
             ));
+
+
 
         build.Dispatch(kernel_build, Mathf.CeilToInt(gridResolution / 8.0f), Mathf.CeilToInt(gridResolution / 8.0f), 1);
 
